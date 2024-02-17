@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 from enum import Enum
 from langchain.prompts import PromptTemplate
+from models.firebase_models import Customer
 
 from pydantic import validator
 from vocode.streaming.models.actions import ActionConfig
@@ -64,6 +65,7 @@ class AzureOpenAIConfig(BaseModel):
 
 
 class AgentConfig(TypedModel, type=AgentType.BASE.value):
+    conversation_id: Optional[str] = None
     initial_message: Optional[BaseMessage] = None
     generate_responses: bool = True
     allowed_idle_time_seconds: Optional[float] = None
@@ -100,6 +102,7 @@ class ChatGPTAgentConfig(AgentConfig, type=AgentType.CHAT_GPT.value):
     vector_db_config: Optional[VectorDBConfig] = None
 
 class LyngoChatGPTAgentConfig(AgentConfig, type=AgentType.LYNGO_GPT_AGENT.value):
+    customer: Customer
     prompt_preamble: str
     expected_first_prompt: Optional[str] = None
     model_name: str = CHAT_GPT_AGENT_DEFAULT_MODEL_NAME
