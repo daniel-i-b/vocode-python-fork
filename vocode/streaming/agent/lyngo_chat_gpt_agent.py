@@ -8,6 +8,7 @@ from typing import AsyncGenerator, Optional, Tuple
 
 import logging
 from pydantic import BaseModel
+from services.cliniko import ClinikoAPI
 
 from vocode import getenv
 from vocode.streaming.action.factory import ActionFactory
@@ -22,6 +23,7 @@ from vocode.streaming.agent.utils import (
 )
 from vocode.streaming.models.events import Sender
 from vocode.streaming.models.transcript import Transcript
+from vocode.streaming.telephony.config_manager.redis_config_manager import RedisConfigManager
 from vocode.streaming.vector_db.factory import VectorDBFactory
 
 
@@ -60,7 +62,20 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
             self.vector_db = vector_db_factory.create_vector_db(
                 self.agent_config.vector_db_config
             )
-        # asyncio.create_task(self.ten_seconds_task())
+        asyncio.create_task(self.get_patient_details())
+
+    async def get_patient_details(self):
+        config = await RedisConfigManager().get_config(self.agent_config.conversation_id)
+        phone_number = config.to_phone
+        patient_data = await ClinikoAPI(self.agent_config.customer.cliniko.api_key).get_patient_data(phone_number,
+                                                                                self.agent_config.customer.timezone,
+                                                                                self.agent_config.conversation_id)
+        # await asyncio.sleep(10)
+        # print("FOUND PATIENT!!")
+        
+        self.agent_config.prompt_preamble = self.agent_config.prompt_preamble.format(patient_data=patient_data)
+        print(self.agent_config.prompt_preamble )
+        # print(patient_data)
 
     async def ten_seconds_task(self):
         print("Task started, waiting for 10 seconds...")
