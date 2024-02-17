@@ -272,8 +272,14 @@ class RespondAgent(BaseAgent[AgentConfigType]):
                 transcription = typing.cast(
                     TranscriptionAgentInput, agent_input
                 ).transcription
+                if transcription.confidence <= 0.65:
+                    conf_score = "LOW"
+                elif transcription.confidence > 0.65 and transcription.confidence <= 0.89:
+                    conf_score = "MEDIUM"
+                else:
+                    conf_score = "HIGH"
                 self.transcript.add_human_message(
-                    text=transcription.message,
+                    text=transcription.message + f" (conf: {conf_score})",
                     conversation_id=agent_input.conversation_id,
                 )
             elif isinstance(agent_input, ActionResultAgentInput):

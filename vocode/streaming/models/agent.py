@@ -66,6 +66,7 @@ class AgentConfig(TypedModel, type=AgentType.BASE.value):
     initial_message: Optional[BaseMessage] = None
     generate_responses: bool = True
     allowed_idle_time_seconds: Optional[float] = None
+    idle_time_before_follow_up: Optional[float] = None
     allow_agent_to_be_cut_off: bool = True
     end_conversation_on_goodbye: bool = False
     send_filler_audio: Union[bool, FillerAudioConfig] = False

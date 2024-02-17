@@ -450,6 +450,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
         self.is_human_speaking = False
         self.active = False
         self.mark_last_action_timestamp()
+        self.follow_up_message_count = 0
 
         self.check_for_idle_task: Optional[asyncio.Task] = None
         self.track_bot_sentiment_task: Optional[asyncio.Task] = None
@@ -520,17 +521,37 @@ class StreamingConversation(Generic[OutputDeviceType]):
         await initial_message_tracker.wait()
         self.transcriber.unmute()
 
+    async def send_follow_up_message(self, message: BaseMessage):
+        initial_message_tracker = asyncio.Event()
+        agent_response_event = (
+            self.interruptible_event_factory.create_interruptible_agent_response_event(
+                AgentResponseMessage(message=message),
+                is_interruptible=True,
+                agent_response_tracker=initial_message_tracker,
+            )
+        )
+        self.agent_responses_worker.consume_nonblocking(agent_response_event)
+        await initial_message_tracker.wait()
+
     async def check_for_idle(self):
         """Terminates the conversation after 15 seconds if no activity is detected"""
         while self.is_active():
-            if time.time() - self.last_action_timestamp > (
-                self.agent.get_agent_config().allowed_idle_time_seconds
-                or ALLOWED_IDLE_TIME
-            ):
+            if self.agent.get_agent_config().idle_time_before_follow_up:
+                if time.time() - self.last_action_timestamp > self.agent.get_agent_config().idle_time_before_follow_up:
+                    if self.follow_up_message_count == 0:
+                      message = "are you still there?"
+                    else:
+                        message = "hello? are you still there?"
+                    # print("DEFINED!!!!!!!")
+                    self.follow_up_message_count += 1
+                    print("FOLLOW UP COUNT!!:")
+                    print(self.follow_up_message_count)
+                    asyncio.create_task(self.send_follow_up_message(BaseMessage(text=message)))
+            if self.follow_up_message_count > 2:
                 self.logger.debug("Conversation idle for too long, terminating")
                 await self.terminate()
                 return
-            await asyncio.sleep(15)
+            await asyncio.sleep(5)
 
     async def track_bot_sentiment(self):
         """Updates self.bot_sentiment every second based on the current transcript"""

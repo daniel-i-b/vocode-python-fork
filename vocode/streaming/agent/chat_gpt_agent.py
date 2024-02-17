@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -59,6 +60,16 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
             self.vector_db = vector_db_factory.create_vector_db(
                 self.agent_config.vector_db_config
             )
+        # asyncio.create_task(self.ten_seconds_task())
+
+    async def ten_seconds_task(self):
+        print("Task started, waiting for 10 seconds...")
+        
+        await asyncio.sleep(10)
+        self.agent_config.prompt_preamble = "im am ai assistant called tim"
+        print("Task completed after 10 seconds!!!!!!!!!")
+         # Waits for 10 seconds asynchronously
+        
 
     def get_functions(self):
         assert self.agent_config.actions
@@ -69,9 +80,7 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
             for action_config in self.agent_config.actions
         ]
 
-    def get_chat_parameters(
-        self, messages: Optional[List] = None, use_functions: bool = True
-    ):
+    def get_chat_parameters(self, messages: Optional[List] = None):
         assert self.transcript is not None
         messages = messages or format_openai_chat_messages_from_transcript(
             self.transcript, self.agent_config.prompt_preamble
@@ -82,15 +91,18 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
             "max_tokens": self.agent_config.max_tokens,
             "temperature": self.agent_config.temperature,
         }
+        print("TEMP", self.agent_config.temperature)
 
         if self.agent_config.azure_params is not None:
             parameters["engine"] = self.agent_config.azure_params.engine
         else:
             parameters["model"] = self.agent_config.model_name
 
-        if use_functions and self.functions:
-            parameters["functions"] = self.functions
-
+        if self.functions:
+            updated_functions_list = [{"type": "function", "function": func} for func in self.functions]
+            parameters["tools"] = updated_functions_list
+            
+        # parameters["seed"] = 1234
         return parameters
 
     def create_first_response(self, first_prompt):
