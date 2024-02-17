@@ -4,6 +4,7 @@ import typing
 from vocode.streaming.agent.anthropic_agent import ChatAnthropicAgent
 from vocode.streaming.agent.base_agent import BaseAgent
 from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
+from vocode.streaming.agent.lyngo_chat_gpt_agent import LyngoChatGPTAgent
 from vocode.streaming.agent.echo_agent import EchoAgent
 from vocode.streaming.agent.information_retrieval_agent import InformationRetrievalAgent
 from vocode.streaming.agent.llm_agent import LLMAgent
@@ -16,6 +17,7 @@ from vocode.streaming.models.agent import (
     AgentType,
     ChatAnthropicAgentConfig,
     ChatGPTAgentConfig,
+    LyngoChatGPTAgentConfig,
     EchoAgentConfig,
     InformationRetrievalAgentConfig,
     LLMAgentConfig,
@@ -42,4 +44,6 @@ class AgentFactory:
             return ChatAnthropicAgent(agent_config=agent_config, logger=logger)
         elif isinstance(agent_config, LlamacppAgentConfig):
             return LlamacppAgent(agent_config=agent_config, logger=logger)
+        elif isinstance(agent_config, LyngoChatGPTAgentConfig):
+            return LyngoChatGPTAgent(agent_config=agent_config, logger=logger)
         raise Exception("Invalid agent config", agent_config.type)

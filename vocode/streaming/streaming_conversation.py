@@ -14,6 +14,7 @@ from vocode.streaming.action.worker import ActionsWorker
 from vocode.streaming.agent.bot_sentiment_analyser import (
     BotSentimentAnalyser,
 )
+from vocode.streaming.agent.lyngo_chat_gpt_agent import LyngoChatGPTAgent
 from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
 from vocode.streaming.models.actions import ActionInput
 from vocode.streaming.models.events import Sender
@@ -710,7 +711,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
         await self.synthesizer.tear_down()
         self.logger.debug("Terminating agent")
         if (
-            isinstance(self.agent, ChatGPTAgent)
+            (isinstance(self.agent, ChatGPTAgent) or isinstance(self.agent, LyngoChatGPTAgent))
             and self.agent.agent_config.vector_db_config
         ):
             # Shutting down the vector db should be done in the agent's terminate method,
