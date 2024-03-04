@@ -53,6 +53,7 @@ class PollySynthesizer(BaseSynthesizer[PollySynthesizerConfig]):
             OutputFormat="pcm",
             VoiceId=self.voice_id,
             SampleRate=str(self.sampling_rate),
+            Engine="neural"
         )
 
     def get_speech_marks(self, message: str) -> Any:
@@ -64,6 +65,7 @@ class PollySynthesizer(BaseSynthesizer[PollySynthesizerConfig]):
             VoiceId=self.voice_id,
             SampleRate=str(self.sampling_rate),
             SpeechMarkTypes=["word"],
+            Engine="neural"
         )
 
     # given the number of seconds the message was allowed to go until, where did we get in the message?

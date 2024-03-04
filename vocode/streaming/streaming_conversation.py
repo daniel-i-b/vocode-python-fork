@@ -16,6 +16,7 @@ from vocode.streaming.agent.bot_sentiment_analyser import (
 )
 from vocode.streaming.agent.lyngo_chat_gpt_agent import LyngoChatGPTAgent
 from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
+from vocode.streaming.agent.lyngo_chat_gpt_agent_factory import LyngoChatGPTAgentRegistry
 from vocode.streaming.models.actions import ActionInput
 from vocode.streaming.models.events import Sender
 from vocode.streaming.models.transcript import (
@@ -389,6 +390,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
         self.synthesis_enabled = True
         # Add conversation ID so is available to the agent
         self.agent.set_agent_conversation_id(conversation_id)
+        LyngoChatGPTAgentRegistry.register_agent(self.agent)
 
         self.interruptible_events: queue.Queue[InterruptibleEvent] = queue.Queue()
         self.interruptible_event_factory = self.QueueingInterruptibleEventFactory(

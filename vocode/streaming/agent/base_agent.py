@@ -23,6 +23,7 @@ from vocode.streaming.action.phone_call_action import (
     TwilioPhoneCallAction,
     VonagePhoneCallAction,
 )
+from vocode.streaming.agent.lyngo_chat_gpt_agent_factory import LyngoChatGPTAgentRegistry
 from vocode.streaming.models.actions import (
     ActionConfig,
     ActionInput,
@@ -278,7 +279,9 @@ class RespondAgent(BaseAgent[AgentConfigType]):
                 transcription = typing.cast(
                     TranscriptionAgentInput, agent_input
                 ).transcription
-                if transcription.confidence <= 0.65:
+                if transcription.confidence == 0.0:
+                    conf_score = "UNKNOWN"
+                elif transcription.confidence <= 0.65:
                     conf_score = "LOW"
                 elif transcription.confidence > 0.65 and transcription.confidence <= 0.89:
                     conf_score = "MEDIUM"

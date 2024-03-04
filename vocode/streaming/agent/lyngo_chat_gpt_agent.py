@@ -66,7 +66,8 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
 
     async def get_patient_details(self):
         config = await RedisConfigManager().get_config(self.agent_config.conversation_id)
-        phone_number = config.to_phone
+        phone_number = self.ensure_country_code(config.to_phone)
+
         patient_data = await ClinikoAPI(self.agent_config.customer.cliniko.api_key).get_patient_data(phone_number,
                                                                                 self.agent_config.customer.timezone,
                                                                                 self.agent_config.conversation_id)
@@ -76,6 +77,13 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         self.agent_config.prompt_preamble = self.agent_config.prompt_preamble.format(patient_data=patient_data)
         print(self.agent_config.prompt_preamble )
         # print(patient_data)
+    
+    def ensure_country_code(self, phone_number, country_code='61'):
+        # Check if the phone number already starts with the country code
+        if not phone_number.startswith(country_code):
+            # If not, prepend the country code
+            phone_number = country_code + phone_number
+        return phone_number
 
     async def ten_seconds_task(self):
         print("Task started, waiting for 10 seconds...")
@@ -100,7 +108,8 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         messages = messages or format_openai_chat_messages_from_transcript(
             self.transcript, self.agent_config.prompt_preamble
         )
-
+        # print("MESSAGES")
+        # print(messages)
         parameters: Dict[str, Any] = {
             "messages": messages,
             "max_tokens": self.agent_config.max_tokens,
