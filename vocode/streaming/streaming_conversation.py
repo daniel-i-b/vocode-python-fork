@@ -120,6 +120,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
 
         async def process(self, transcription: Transcription):
             self.conversation.mark_last_action_timestamp()
+            print("LISTENING!!!")
             if transcription.message.strip() == "":
                 self.conversation.logger.info("Ignoring empty transcription")
                 return
@@ -507,7 +508,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
             self.track_bot_sentiment_task = asyncio.create_task(
                 self.track_bot_sentiment()
             )
-        self.check_for_idle_task = asyncio.create_task(self.check_for_idle())
+        # self.check_for_idle_task = asyncio.create_task(self.check_for_idle())
         if len(self.events_manager.subscriptions) > 0:
             self.events_task = asyncio.create_task(self.events_manager.start())
 

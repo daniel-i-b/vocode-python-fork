@@ -47,6 +47,7 @@ class WebSocketUserImplementedAgent(BaseAgent[WebSocketUserImplementedAgentConfi
         self.logger = logger or logging.getLogger(__name__)
 
         self.has_ended = False
+        print("WEB SOCKET INIT!!!!!")
         super().__init__(agent_config=agent_config, logger=logger)
 
     def get_agent_config(self) -> WebSocketUserImplementedAgentConfig:

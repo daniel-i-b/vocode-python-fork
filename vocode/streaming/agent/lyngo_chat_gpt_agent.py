@@ -62,7 +62,7 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
             self.vector_db = vector_db_factory.create_vector_db(
                 self.agent_config.vector_db_config
             )
-        asyncio.create_task(self.get_patient_details())
+        # asyncio.create_task(self.get_patient_details())
 
     async def get_patient_details(self):
         config = await RedisConfigManager().get_config(self.agent_config.conversation_id)

@@ -174,6 +174,7 @@ class InterruptibleWorker(AsyncWorker[InterruptibleEventType]):
         interruptible_event_factory: InterruptibleEventFactory = InterruptibleEventFactory(),
         max_concurrency=2,
     ) -> None:
+        print("INIT INTERUPTION!!!")
         super().__init__(input_queue, output_queue)
         self.input_queue = input_queue
         self.max_concurrency = max_concurrency

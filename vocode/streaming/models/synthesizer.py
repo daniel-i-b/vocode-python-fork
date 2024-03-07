@@ -26,6 +26,7 @@ class SynthesizerType(str, Enum):
     COQUI = "synthesizer_coqui"
     BARK = "synthesizer_bark"
     POLLY = "synthesizer_polly"
+    PLAY_HT_TURBO = "synthesizer_play_ht_turbo"
 
 
 class SentimentConfig(BaseModel):
@@ -166,6 +167,15 @@ PLAYHT_DEFAULT_VOICE_ID = "larry"
 
 
 class PlayHtSynthesizerConfig(SynthesizerConfig, type=SynthesizerType.PLAY_HT.value):
+    api_key: Optional[str] = None
+    user_id: Optional[str] = None
+    speed: Optional[int] = None
+    seed: Optional[int] = None
+    temperature: Optional[int] = None
+    voice_id: str = PLAYHT_DEFAULT_VOICE_ID
+    experimental_streaming: bool = False
+
+class PlayHtTurboSynthesizerConfig(SynthesizerConfig, type=SynthesizerType.PLAY_HT_TURBO.value):
     api_key: Optional[str] = None
     user_id: Optional[str] = None
     speed: Optional[int] = None

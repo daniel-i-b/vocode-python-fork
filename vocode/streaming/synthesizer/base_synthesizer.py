@@ -244,7 +244,7 @@ class BaseSynthesizer(Generic[SynthesizerConfigType]):
 
     async def experimental_mp3_streaming_output_generator(
         self,
-        response: aiohttp.ClientResponse,
+        response,
         chunk_size: int,
         create_speech_span: Optional[Span],
     ) -> AsyncGenerator[SynthesisResult.ChunkResult, None]:
@@ -261,13 +261,22 @@ class BaseSynthesizer(Generic[SynthesizerConfigType]):
             miniaudio_worker_output_queue,
         )
         miniaudio_worker.start()
-        stream_reader = response.content
+        # stream_reader = response
+        stream_reader = response
 
         # Create a task to send the mp3 chunks to the MiniaudioWorker's input queue in a separate loop
         async def send_chunks():
-            async for chunk in stream_reader.iter_any():
-                miniaudio_worker.consume_nonblocking(chunk)
+            for i, chunk in enumerate(stream_reader):
+                if i > 0:
+                    miniaudio_worker.consume_nonblocking(chunk)
+                    print("in chunk")
             miniaudio_worker.consume_nonblocking(None)  # sentinel
+
+        # async def send_chunks():
+        #     async for i, chunk in enumerate(stream_reader.iter_any()):
+        #         miniaudio_worker.consume_nonblocking(chunk)
+        #     miniaudio_worker.consume_nonblocking(None)  # sentinel
+
 
         try:
             asyncio.create_task(send_chunks())
@@ -276,6 +285,10 @@ class BaseSynthesizer(Generic[SynthesizerConfigType]):
             while True:
                 # Get the wav chunk and the flag from the output queue of the MiniaudioWorker
                 wav_chunk, is_last = await miniaudio_worker.output_queue.get()
+                # print("is last")
+                # print(is_last)
+                # print("SPAN")
+                # print(create_speech_span is not None)
                 if self.synthesizer_config.should_encode_as_wav:
                     wav_chunk = encode_as_wav(wav_chunk, self.synthesizer_config)
 
@@ -287,8 +300,10 @@ class BaseSynthesizer(Generic[SynthesizerConfigType]):
         except asyncio.CancelledError:
             pass
         finally:
+            print("TERMINATING MINAUDIO WORKER")
             miniaudio_worker.terminate()
 
     async def tear_down(self):
         if self.should_close_session_on_tear_down:
+            print("CLOSING DOWN!!!!!!!!")
             await self.aiohttp_session.close()

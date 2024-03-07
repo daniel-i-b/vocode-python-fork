@@ -62,6 +62,7 @@ class DeepgramTranscriber(BaseAsyncTranscriber[DeepgramTranscriberConfig]):
         self.is_ready = False
         self.logger = logger or logging.getLogger(__name__)
         self.audio_cursor = 0.0
+        print("DEEPGRAM INITIALIZED")
 
     async def _run_loop(self):
         restarts = 0
@@ -193,6 +194,7 @@ class DeepgramTranscriber(BaseAsyncTranscriber[DeepgramTranscriberConfig]):
                 self.logger.debug("Terminating Deepgram transcriber sender")
 
             async def receiver(ws: WebSocketClientProtocol):
+                print("IN RECEIVER!!!!!!!!!!!!!!")
                 buffer = ""
                 buffer_avg_confidence = 0
                 num_buffer_utterances = 1
@@ -200,6 +202,7 @@ class DeepgramTranscriber(BaseAsyncTranscriber[DeepgramTranscriberConfig]):
                 transcript_cursor = 0.0
                 while not self._ended:
                     try:
+                        print("LISTENING DEEPGRAM")
                         msg = await ws.recv()
                     except Exception as e:
                         self.logger.debug(f"Got error {e} in Deepgram receiver")

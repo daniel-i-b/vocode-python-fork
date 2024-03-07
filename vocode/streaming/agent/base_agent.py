@@ -147,6 +147,7 @@ class BaseAgent(AbstractAgent[AgentConfigType], InterruptibleWorker):
         interruptible_event_factory: InterruptibleEventFactory = InterruptibleEventFactory(),
         logger: Optional[logging.Logger] = None,
     ):
+        print("BEFORE INITS")
         self.input_queue: asyncio.Queue[
             InterruptibleEvent[AgentInput]
         ] = asyncio.Queue()
@@ -175,6 +176,7 @@ class BaseAgent(AbstractAgent[AgentConfigType], InterruptibleWorker):
 
         self.functions = self.get_functions() if self.agent_config.actions else None
         self.is_muted = False
+        print("AFTER INITS")
 
     def get_functions(self):
         raise NotImplementedError
@@ -274,6 +276,7 @@ class RespondAgent(BaseAgent[AgentConfigType]):
             return
         assert self.transcript is not None
         try:
+            print("LISTENING RespondAgent")
             agent_input = item.payload
             if isinstance(agent_input, TranscriptionAgentInput):
                 transcription = typing.cast(
