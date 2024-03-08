@@ -66,11 +66,14 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
 
     async def get_patient_details(self):
         config = await RedisConfigManager().get_config(self.agent_config.conversation_id)
-        phone_number = self.ensure_country_code(config.to_phone)
+        # Scrapping this for now as fixed on vonage end
+        # phone_number = self.ensure_country_code(config.to_phone, self.agent_config.customer.timezone)
+        phone_number = config.to_phone
 
         patient_data = await ClinikoAPI(self.agent_config.customer.cliniko.api_key).get_patient_data(phone_number,
                                                                                 self.agent_config.customer.timezone,
-                                                                                self.agent_config.conversation_id)
+                                                                                self.agent_config.conversation_id,
+                                                                                self.agent_config.customer)
         # await asyncio.sleep(10)
         # print("FOUND PATIENT!!")
         
@@ -78,7 +81,32 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         print(self.agent_config.prompt_preamble )
         # print(patient_data)
     
-    def ensure_country_code(self, phone_number, country_code='61'):
+    def get_country_code(self, timezone):
+        australia_timezones = [
+            'Australia/Perth',      # AWST
+            'Australia/Adelaide',   # ACST
+            'Australia/Darwin',     # ACST
+            'Australia/Brisbane',   # AEST
+            'Australia/Sydney',     # AEST
+            'Australia/Melbourne',  # AEST
+            'Australia/Hobart',     # AEST
+            'Australia/Lord_Howe',  # LHST/LHDT
+            'Australia/Eucla'       # ACWST
+        ]
+
+        newzealand_timezones = [
+            'Pacific/Auckland',
+            'Pacific/Chatham'
+        ]
+        if timezone in australia_timezones:
+            return "61"
+        elif timezone in newzealand_timezones:
+            return "64"
+        else:
+            return ""
+
+    def ensure_country_code(self, phone_number, timezone):
+        country_code = self.get_country_code(timezone)
         # Check if the phone number already starts with the country code
         if not phone_number.startswith(country_code):
             # If not, prepend the country code
