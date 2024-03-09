@@ -702,6 +702,9 @@ class StreamingConversation(Generic[OutputDeviceType]):
         self.events_manager.publish_event(
             TranscriptCompleteEvent(conversation_id=self.id, transcript=self.transcript)
         )
+        if self.agent.get_patient_details_task:
+            self.logger.debug("Terminating get_patient_details_task Task")
+            self.agent.get_patient_details_task.cancel()
         if self.check_for_idle_task:
             self.logger.debug("Terminating check_for_idle Task")
             self.check_for_idle_task.cancel()

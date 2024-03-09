@@ -62,7 +62,7 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
             self.vector_db = vector_db_factory.create_vector_db(
                 self.agent_config.vector_db_config
             )
-        asyncio.create_task(self.get_patient_details())
+        self.get_patient_details_task = asyncio.create_task(self.get_patient_details())
 
     async def get_patient_details(self):
         config = await RedisConfigManager().get_config(self.agent_config.conversation_id)
@@ -79,6 +79,8 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         
         self.agent_config.prompt_preamble = self.agent_config.prompt_preamble.format(patient_data=patient_data)
         print(self.agent_config.prompt_preamble )
+        # asyncio.get_event_loop().stop()
+        return True
         # print(patient_data)
     
     def get_country_code(self, timezone):
