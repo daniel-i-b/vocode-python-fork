@@ -76,9 +76,10 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
                                                                                 self.agent_config.customer)
         # await asyncio.sleep(10)
         # print("FOUND PATIENT!!")
-        
+        self.logger.info("Updated prompt...")
         self.agent_config.prompt_preamble = self.agent_config.prompt_preamble.format(patient_data=patient_data)
-        print(self.agent_config.prompt_preamble )
+        self.logger.info(self.agent_config.prompt_preamble)
+        # print(self.agent_config.prompt_preamble)
         # asyncio.get_event_loop().stop()
         return True
         # print(patient_data)
@@ -138,8 +139,8 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         messages = messages or format_openai_chat_messages_from_transcript(
             self.transcript, self.agent_config.prompt_preamble
         )
-        # print("MESSAGES")
-        # print(messages)
+        print("MESSAGES")
+        print(messages)
         parameters: Dict[str, Any] = {
             "messages": messages,
             "max_tokens": self.agent_config.max_tokens,
