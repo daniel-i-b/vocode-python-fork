@@ -4,6 +4,10 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import openai
+from openai import AsyncOpenAI, AsyncAzureOpenAI
+
+
+
 from typing import AsyncGenerator, Optional, Tuple
 
 import logging
@@ -37,16 +41,22 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
         super().__init__(
             agent_config=agent_config, action_factory=action_factory, logger=logger
         )
+
         if agent_config.azure_params:
-            openai.api_type = agent_config.azure_params.api_type
-            openai.api_base = getenv("AZURE_OPENAI_API_BASE")
-            openai.api_version = agent_config.azure_params.api_version
-            openai.api_key = getenv("AZURE_OPENAI_API_KEY")
+            api_key = getenv("AZURE_OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
+            self.aclient = AsyncAzureOpenAI(
+            api_key=api_key,
+            azure_endpoint=getenv("AZURE_OPENAI_API_BASE"),
+            api_version=agent_config.azure_params.api_version)
+
         else:
-            openai.api_type = "open_ai"
-            openai.api_base = "https://api.openai.com/v1"
-            openai.api_version = None
-            openai.api_key = openai_api_key or getenv("OPENAI_API_KEY")
+            api_key = openai_api_key or getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
+            self.aclient = AsyncOpenAI(api_key=api_key)
+
         if not openai.api_key:
             raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
         self.first_response = (
@@ -94,14 +104,14 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
         print("TEMP", self.agent_config.temperature)
 
         if self.agent_config.azure_params is not None:
-            parameters["engine"] = self.agent_config.azure_params.engine
+            parameters["model"] = self.agent_config.azure_params.model
         else:
             parameters["model"] = self.agent_config.model_name
 
         if self.functions:
             updated_functions_list = [{"type": "function", "function": func} for func in self.functions]
             parameters["tools"] = updated_functions_list
-            
+
         # parameters["seed"] = 1234
         return parameters
 
@@ -116,7 +126,7 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
         ]
 
         parameters = self.get_chat_parameters(messages)
-        return openai.ChatCompletion.create(**parameters)
+        return self.aclient.chat.completions.create(**parameters)
 
     def attach_transcript(self, transcript: Transcript):
         self.transcript = transcript
@@ -138,7 +148,7 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
             text = self.first_response
         else:
             chat_parameters = self.get_chat_parameters()
-            chat_completion = await openai.ChatCompletion.acreate(**chat_parameters)
+            chat_completion = await self.aclient.chat.completions.create(**chat_parameters)
             text = chat_completion.choices[0].message.content
         self.logger.debug(f"LLM response: {text}")
         return text, False
@@ -184,7 +194,7 @@ class ChatGPTAgent(RespondAgent[ChatGPTAgentConfig]):
         else:
             chat_parameters = self.get_chat_parameters()
         chat_parameters["stream"] = True
-        stream = await openai.ChatCompletion.acreate(**chat_parameters)
+        stream = await self.aclient.chat.completions.create(**chat_parameters)
         async for message in collate_response_async(
             openai_get_tokens(stream), get_functions=True
         ):

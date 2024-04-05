@@ -5,7 +5,7 @@ from langchain import OpenAI
 from typing import Generator
 import logging
 
-import openai
+from openai import OpenAI, AsyncOpenAI
 from vocode import getenv
 
 from vocode.streaming.agent.base_agent import BaseAgent, RespondAgent
@@ -101,14 +101,12 @@ class LLMAgent(RespondAgent[LLMAgentConfig]):
         return response, False
 
     async def _stream_sentences(self, prompt):
-        stream = await openai.Completion.acreate(
-            prompt=prompt,
-            max_tokens=self.agent_config.max_tokens,
-            temperature=self.agent_config.temperature,
-            model=self.agent_config.model_name,
-            stop=self.stop_tokens,
-            stream=True,
-        )
+        stream = await AsyncOpenAI().completions.create(prompt=prompt,
+        max_tokens=self.agent_config.max_tokens,
+        temperature=self.agent_config.temperature,
+        model=self.agent_config.model_name,
+        stop=self.stop_tokens,
+        stream=True)
         async for sentence in collate_response_async(
             openai_get_tokens(gen=stream),
         ):

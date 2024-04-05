@@ -4,6 +4,8 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import openai
+from openai import AsyncOpenAI, AsyncAzureOpenAI
+
 from typing import AsyncGenerator, Optional, Tuple
 
 import logging
@@ -40,17 +42,20 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
             agent_config=agent_config, action_factory=action_factory, logger=logger
         )
         if agent_config.azure_params:
-            openai.api_type = agent_config.azure_params.api_type
-            openai.api_base = getenv("AZURE_OPENAI_API_BASE")
-            openai.api_version = agent_config.azure_params.api_version
-            openai.api_key = getenv("AZURE_OPENAI_API_KEY")
+            print("IN AZURE!!!")
+            api_key = getenv("AZURE_OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
+            self.aclient = AsyncAzureOpenAI(
+            api_key=api_key,
+            azure_endpoint=getenv("AZURE_OPENAI_API_BASE"),
+            api_version=agent_config.azure_params.api_version)
         else:
-            openai.api_type = "open_ai"
-            openai.api_base = "https://api.openai.com/v1"
-            openai.api_version = None
-            openai.api_key = openai_api_key or getenv("OPENAI_API_KEY")
-        if not openai.api_key:
-            raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
+            print("IN OPENAI!!!")
+            api_key = openai_api_key or getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
+            self.aclient = AsyncOpenAI(api_key=api_key)
         self.first_response = (
             self.create_first_response(agent_config.expected_first_prompt)
             if agent_config.expected_first_prompt
@@ -83,7 +88,7 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         # asyncio.get_event_loop().stop()
         return True
         # print(patient_data)
-    
+
     def get_country_code(self, timezone):
         australia_timezones = [
             'Australia/Perth',      # AWST
@@ -118,12 +123,12 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
 
     async def ten_seconds_task(self):
         print("Task started, waiting for 10 seconds...")
-        
+
         await asyncio.sleep(10)
         self.agent_config.prompt_preamble = "im am ai assistant called tim"
         print("Task completed after 10 seconds!!!!!!!!!")
          # Waits for 10 seconds asynchronously
-        
+
 
     def get_functions(self):
         assert self.agent_config.actions
@@ -139,8 +144,8 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         messages = messages or format_openai_chat_messages_from_transcript(
             self.transcript, self.agent_config.prompt_preamble
         )
-        print("MESSAGES")
-        print(messages)
+        # print("MESSAGES")
+        # print(messages)
         parameters: Dict[str, Any] = {
             "messages": messages,
             "max_tokens": self.agent_config.max_tokens,
@@ -149,14 +154,14 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         print("TEMP", self.agent_config.temperature)
 
         if self.agent_config.azure_params is not None:
-            parameters["engine"] = self.agent_config.azure_params.engine
+            parameters["model"] = self.agent_config.azure_params.model
         else:
             parameters["model"] = self.agent_config.model_name
 
         if self.functions:
             updated_functions_list = [{"type": "function", "function": func} for func in self.functions]
             parameters["tools"] = updated_functions_list
-            
+
         # parameters["seed"] = 1234
         return parameters
 
@@ -171,7 +176,7 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         ]
 
         parameters = self.get_chat_parameters(messages)
-        return openai.ChatCompletion.create(**parameters)
+        return self.aclient.chat.completions.create(**parameters)
 
     def attach_transcript(self, transcript: Transcript):
         self.transcript = transcript
@@ -193,7 +198,7 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
             text = self.first_response
         else:
             chat_parameters = self.get_chat_parameters()
-            chat_completion = await openai.ChatCompletion.acreate(**chat_parameters)
+            chat_completion = await self.aclient.chat.completions.create(**chat_parameters)
             text = chat_completion.choices[0].message.content
         self.logger.debug(f"LLM response: {text}")
         return text, False
@@ -239,7 +244,7 @@ class LyngoChatGPTAgent(RespondAgent[LyngoChatGPTAgentConfig]):
         else:
             chat_parameters = self.get_chat_parameters()
         chat_parameters["stream"] = True
-        stream = await openai.ChatCompletion.acreate(**chat_parameters)
+        stream = await self.aclient.chat.completions.create(**chat_parameters)
         async for message in collate_response_async(
             openai_get_tokens(stream), get_functions=True
         ):
