@@ -1,7 +1,9 @@
 import os
 from typing import Iterable, List, Optional, Tuple
 import aiohttp
-import openai
+from openai import AsyncOpenAI
+from vocode import getenv
+
 from langchain.docstore.document import Document
 
 DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002"
@@ -12,6 +14,10 @@ class VectorDB:
         self,
         aiohttp_session: Optional[aiohttp.ClientSession] = None,
     ):
+        api_key = getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY must be set in environment or passed in")
+        self.aclient = AsyncOpenAI(api_key=api_key)
         if aiohttp_session:
             # the caller is responsible for closing the session
             self.aiohttp_session = aiohttp_session
@@ -33,7 +39,7 @@ class VectorDB:
         else:
             params["model"] = model
 
-        return list((await openai.Embedding.acreate(**params))["data"][0]["embedding"])
+        return list((await self.aclient.embeddings.create(**params))["data"][0]["embedding"])
 
     async def add_texts(
         self,

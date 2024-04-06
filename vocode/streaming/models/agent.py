@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 from enum import Enum
 from langchain.prompts import PromptTemplate
+from models.firebase_models import Customer
 
 from pydantic import validator
 from vocode.streaming.models.actions import ActionConfig
@@ -27,6 +28,7 @@ class AgentType(str, Enum):
     LLM = "agent_llm"
     CHAT_GPT_ALPHA = "agent_chat_gpt_alpha"
     CHAT_GPT = "agent_chat_gpt"
+    LYNGO_GPT_AGENT = "agent_lyngo_gpt"
     CHAT_ANTHROPIC = "agent_chat_anthropic"
     CHAT_VERTEX_AI = "agent_chat_vertex_ai"
     ECHO = "agent_echo"
@@ -59,13 +61,15 @@ class WebhookConfig(BaseModel):
 class AzureOpenAIConfig(BaseModel):
     api_type: str = AZURE_OPENAI_DEFAULT_API_TYPE
     api_version: Optional[str] = AZURE_OPENAI_DEFAULT_API_VERSION
-    engine: str = AZURE_OPENAI_DEFAULT_ENGINE
+    model: str = AZURE_OPENAI_DEFAULT_ENGINE
 
 
 class AgentConfig(TypedModel, type=AgentType.BASE.value):
+    conversation_id: Optional[str] = None
     initial_message: Optional[BaseMessage] = None
     generate_responses: bool = True
     allowed_idle_time_seconds: Optional[float] = None
+    idle_time_before_follow_up: Optional[float] = None
     allow_agent_to_be_cut_off: bool = True
     end_conversation_on_goodbye: bool = False
     send_filler_audio: Union[bool, FillerAudioConfig] = False
@@ -88,6 +92,17 @@ class LLMAgentConfig(AgentConfig, type=AgentType.LLM.value):
 
 
 class ChatGPTAgentConfig(AgentConfig, type=AgentType.CHAT_GPT.value):
+    prompt_preamble: str
+    expected_first_prompt: Optional[str] = None
+    model_name: str = CHAT_GPT_AGENT_DEFAULT_MODEL_NAME
+    temperature: float = LLM_AGENT_DEFAULT_TEMPERATURE
+    max_tokens: int = LLM_AGENT_DEFAULT_MAX_TOKENS
+    cut_off_response: Optional[CutOffResponse] = None
+    azure_params: Optional[AzureOpenAIConfig] = None
+    vector_db_config: Optional[VectorDBConfig] = None
+
+class LyngoChatGPTAgentConfig(AgentConfig, type=AgentType.LYNGO_GPT_AGENT.value):
+    customer: Customer
     prompt_preamble: str
     expected_first_prompt: Optional[str] = None
     model_name: str = CHAT_GPT_AGENT_DEFAULT_MODEL_NAME

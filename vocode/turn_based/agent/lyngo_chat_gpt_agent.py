@@ -14,7 +14,7 @@ from vocode import getenv
 from vocode.turn_based.agent.base_agent import BaseAgent
 
 
-class ChatGPTAgent(BaseAgent):
+class LyngoChatGPTAgent(BaseAgent):
     def __init__(
         self,
         system_prompt: str,

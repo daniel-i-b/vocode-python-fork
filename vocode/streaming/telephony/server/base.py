@@ -153,6 +153,7 @@ class TelephonyServer:
                 to_phone=vonage_answer_request.from_,
                 from_phone=vonage_answer_request.to,
             )
+            print("VONAGE UUID: ", vonage_answer_request.uuid)
             conversation_id = create_conversation_id()
             await self.config_manager.save_config(conversation_id, call_config)
             return VonageClient.create_call_ncco(

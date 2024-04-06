@@ -23,6 +23,7 @@ from vocode.streaming.action.phone_call_action import (
     TwilioPhoneCallAction,
     VonagePhoneCallAction,
 )
+from vocode.streaming.agent.lyngo_chat_gpt_agent_factory import LyngoChatGPTAgentRegistry
 from vocode.streaming.models.actions import (
     ActionConfig,
     ActionInput,
@@ -34,6 +35,7 @@ from vocode.streaming.models.actions import (
 from vocode.streaming.models.agent import (
     AgentConfig,
     ChatGPTAgentConfig,
+    LyngoChatGPTAgentConfig,
     LLMAgentConfig,
 )
 from vocode.streaming.models.message import BaseMessage
@@ -117,6 +119,9 @@ class AbstractAgent(Generic[AgentConfigType]):
 
     def get_agent_config(self) -> AgentConfig:
         return self.agent_config
+    
+    def set_agent_conversation_id(self, value):
+        self.agent_config.conversation_id = value
 
     def update_last_bot_message_on_cut_off(self, message: str):
         """Updates the last bot message in the conversation history when the human cuts off the bot's response."""
@@ -125,6 +130,8 @@ class AbstractAgent(Generic[AgentConfigType]):
     def get_cut_off_response(self) -> str:
         assert isinstance(self.agent_config, LLMAgentConfig) or isinstance(
             self.agent_config, ChatGPTAgentConfig
+        ) or isinstance(
+            self.agent_config, LyngoChatGPTAgentConfig
         ), "Set cutoff response is only implemented in LLMAgent and ChatGPTAgent"
         assert self.agent_config.cut_off_response is not None
         on_cut_off_messages = self.agent_config.cut_off_response.messages
@@ -272,8 +279,16 @@ class RespondAgent(BaseAgent[AgentConfigType]):
                 transcription = typing.cast(
                     TranscriptionAgentInput, agent_input
                 ).transcription
+                if transcription.confidence == 0.0:
+                    conf_score = "UNKNOWN"
+                elif transcription.confidence <= 0.65:
+                    conf_score = "LOW"
+                elif transcription.confidence > 0.65 and transcription.confidence <= 0.89:
+                    conf_score = "MEDIUM"
+                else:
+                    conf_score = "HIGH"
                 self.transcript.add_human_message(
-                    text=transcription.message,
+                    text=transcription.message + f" (conf: {conf_score})",
                     conversation_id=agent_input.conversation_id,
                 )
             elif isinstance(agent_input, ActionResultAgentInput):
@@ -406,9 +421,9 @@ class RespondAgent(BaseAgent[AgentConfigType]):
             and self.agent_config.azure_params is not None
         ):
             beginning_agent_name = self.agent_config.type.rsplit("_", 1)[0]
-            engine = self.agent_config.azure_params.engine
+            model = self.agent_config.azure_params.model
             tracer_name_start = (
-                f"{AGENT_TRACE_NAME}.{beginning_agent_name}_azuregpt-{engine}"
+                f"{AGENT_TRACE_NAME}.{beginning_agent_name}_azuregpt-{model}"
             )
         else:
             optional_model_name = (
