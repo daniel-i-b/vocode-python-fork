@@ -85,7 +85,7 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
                             '@' : " at "}
 
         # Split the message by whitespace to keep the structure
-        message_parts = re.split(r'(\s+)', message)     
+        message_parts = re.split(r'(\s+)', message)
 
         # This may be faster
         for email_part in emails:
