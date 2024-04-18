@@ -57,8 +57,6 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
         bot_sentiment: Optional[BotSentiment] = None,
     ) -> SynthesisResult:
         
-        print("********ELEVENLABS*********")
-        
         # Initialize voice object
         voice = self.elevenlabs.Voice(voice_id=self.voice_id)
         
@@ -86,7 +84,7 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
                             '.' : " dot ",
                             '@' : " at "}
 
-        # # Split the message by whitespace to keep the structure
+        # Split the message by whitespace to keep the structure
         message_parts = re.split(r'(\s+)', message)     
 
         # This may be faster
@@ -99,18 +97,8 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
                 email_part = email_part.replace(character, special_char_dict.get(character))
             message_parts[message_index] = email_part
 
-        # for i, part in enumerate(message_parts):
-        #     if re.search(email_regex, part) is not None:
-        #         for character in special_char_dict:
-        #             part = part.replace(character, special_char_dict.get(character))
-        #         message_parts[i] = part
-        
-        # Simple but might be super slow:
-        # for character in special_char_dict:
-        #     message = message.replace(character, special_char_dict.get(character))
-
         message = "".join(message_parts)
-
+                            
         # Prepare request headers
         headers = {"xi-api-key": self.api_key}
         
