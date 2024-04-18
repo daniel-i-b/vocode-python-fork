@@ -91,7 +91,10 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
 
         # This may be faster
         for email_part in emails:
-            message_index = message_parts.index(email_part)
+            try: 
+                message_index = message_parts.index(email_part)
+            except Exception: 
+                continue
             for character in special_char_dict:
                 email_part = email_part.replace(character, special_char_dict.get(character))
             message_parts[message_index] = email_part
