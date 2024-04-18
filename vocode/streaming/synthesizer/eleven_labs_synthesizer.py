@@ -79,8 +79,8 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
         email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'     
         emails = re.findall(email_regex, message)   
         
-        special_char_dict = {'-' : " dash ", 
-                            '_' : " underscore ", 
+        special_char_dict = {'-' : " dash ",
+                            '_' : " underscore ",
                             '.' : " dot ",
                             '@' : " at "}
 
