@@ -74,28 +74,6 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
 
         if self.optimize_streaming_latency:
             url += f"?optimize_streaming_latency={self.optimize_streaming_latency}"
-            
-        # # Perform email checks on the message text
-        # email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'     
-        # emails = re.findall(email_regex, message)   
-        
-        # special_char_dict = {'-' : " dash ",
-        #                     '_' : " underscore ",
-        #                     '.' : " dot ",
-        #                     '@' : " at "}
-
-        # # Split the message by whitespace to keep the structure
-        # message_parts = re.split(r'(\s+)', message)
-
-        # # This may be faster
-        # for email_part in emails:
-        #     try: 
-        #         message_index = message_parts.index(email_part)
-        #     except Exception: 
-        #         continue
-        #     for character in special_char_dict:
-        #         email_part = email_part.replace(character, special_char_dict.get(character))
-        #     message_parts[message_index] = email_part
 
         email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'   
 
@@ -119,8 +97,6 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
             if re.match(email_regex, part) is not None:
                 message_parts[i] = email_text_convert(message_parts[i])
         message.text = "".join(message_parts)
-        
-        print("********", message, "**********")
                             
         # Prepare request headers
         headers = {"xi-api-key": self.api_key}
@@ -155,7 +131,6 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
         
         # If experimental streaming is enabled, return streaming synthesis result
         if self.experimental_streaming:
-            print("***IF***")
             return SynthesisResult(
                 self.experimental_mp3_streaming_output_generator(
                     response, chunk_size, create_speech_span
@@ -167,7 +142,6 @@ class ElevenLabsSynthesizer(BaseSynthesizer[ElevenLabsSynthesizerConfig]):
             
         # If not experimental streaming, read audio data and process it
         else:
-            print("***ELSE CODE***")
             audio_data = await response.read()
             create_speech_span.end()
             
