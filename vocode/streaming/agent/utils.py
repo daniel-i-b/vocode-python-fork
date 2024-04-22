@@ -37,6 +37,9 @@ async def collate_response_async(
     function_name_buffer = ""
     function_args_buffer = ""
     prev_ends_with_money = False
+    potential_email_buffer = ""
+    to_return = ""
+    prev_token_was_dot = False
     async for token in gen:
         if not token:
             continue
@@ -44,8 +47,18 @@ async def collate_response_async(
             if prev_ends_with_money and token.startswith(" "):
                 yield buffer.strip()
                 buffer = ""
+            elif prev_token_was_dot and token.startswith(" "):
+                if potential_email_buffer:
+                    buffer = buffer.replace(potential_email_buffer, convert_email_characters(potential_email_buffer))
+                    potential_email_buffer = ""
+                yield buffer.strip()    
+                buffer = ""
 
             buffer += token
+            
+            if not token.startswith(" "):
+                potential_email_buffer = buffer.split()[-1]
+            
             possible_list_item = bool(re.match(r"^\d+[ .]", buffer))
             ends_with_money = bool(re.findall(r"\$\d+.$", buffer))
             if re.findall(
@@ -53,21 +66,48 @@ async def collate_response_async(
                 if possible_list_item
                 else sentence_endings_pattern,
                 token,
-            ):
+            ) and not potential_email_buffer:
                 if not ends_with_money:
                     to_return = buffer.strip()
                     if to_return:
                         yield to_return
                     buffer = ""
             prev_ends_with_money = ends_with_money
+            prev_token_was_dot = token.__contains__(".")
         elif isinstance(token, FunctionFragment):
             function_name_buffer += token.name
             function_args_buffer += token.arguments
+            
+    if potential_email_buffer:
+        buffer = buffer.replace(potential_email_buffer, convert_email_characters(potential_email_buffer))
+        
     to_return = buffer.strip()
     if to_return:
         yield to_return
     if function_name_buffer and get_functions:
         yield FunctionCall(name=function_name_buffer, arguments=function_args_buffer)
+        
+        
+def convert_email_characters(message: str):
+    email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    if not re.findall(email_regex, message):
+        return message
+    
+    last_char_equals_dot = message.endswith(".")
+    message = message.removesuffix(".")
+
+    special_char_dict = {'-' : " dash ", 
+                        '_' : " underscore ", 
+                        '.' : " dot ",
+                        '@' : " at "}
+    converted_message = ""
+    for char in message:
+        converted_message += special_char_dict.get(char, char)
+    
+    if last_char_equals_dot:
+        converted_message += "."
+            
+    return converted_message
 
 
 async def openai_get_tokens(gen) -> AsyncGenerator[Union[str, FunctionFragment], None]:
