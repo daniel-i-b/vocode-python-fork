@@ -37,28 +37,28 @@ async def collate_response_async(
     function_name_buffer = ""
     function_args_buffer = ""
     prev_ends_with_money = False
-    potential_email_buffer = ""
-    to_return = ""
-    prev_token_was_dot = False
+    prev_starts_with_whitespace = True
     async for token in gen:
         if not token:
             continue
         if isinstance(token, str):
-            if prev_ends_with_money and token.startswith(" "):
+            starts_with_whitespace = token.startswith(" ")
+            
+            if prev_ends_with_money and starts_with_whitespace:
                 yield buffer.strip()
                 buffer = ""
-            elif prev_token_was_dot and token.startswith(" "):
-                if potential_email_buffer:
-                    buffer = buffer.replace(potential_email_buffer, convert_email_characters(potential_email_buffer))
-                    potential_email_buffer = ""
-                yield buffer.strip()    
-                buffer = ""
+            # If the previous token didn't have leading whitespace and the current does:
+            elif not prev_starts_with_whitespace and starts_with_whitespace:
+                potential_email_text = buffer.split()[-1]
+                converted_email_text = convert_email_characters(potential_email_text)
+                if converted_email_text != potential_email_text:
+                    buffer = buffer.replace(potential_email_text, converted_email_text)
+                if bool(re.findall(sentence_endings_pattern, buffer)):
+                    yield buffer.strip()
+                    buffer = ""
 
             buffer += token
-            
-            if not token.startswith(" "):
-                potential_email_buffer = buffer.split()[-1]
-            
+                
             possible_list_item = bool(re.match(r"^\d+[ .]", buffer))
             ends_with_money = bool(re.findall(r"\$\d+.$", buffer))
             if re.findall(
@@ -66,20 +66,21 @@ async def collate_response_async(
                 if possible_list_item
                 else sentence_endings_pattern,
                 token,
-            ) and not potential_email_buffer:
-                if not ends_with_money:
+            ):
+                if not ends_with_money and starts_with_whitespace:
                     to_return = buffer.strip()
                     if to_return:
                         yield to_return
                     buffer = ""
             prev_ends_with_money = ends_with_money
-            prev_token_was_dot = token.__contains__(".")
+            prev_starts_with_whitespace = starts_with_whitespace
         elif isinstance(token, FunctionFragment):
             function_name_buffer += token.name
             function_args_buffer += token.arguments
             
-    if potential_email_buffer:
-        buffer = buffer.replace(potential_email_buffer, convert_email_characters(potential_email_buffer))
+    if not prev_starts_with_whitespace:
+        potential_email_text = buffer.split()[-1]
+        buffer = buffer.replace(potential_email_text, convert_email_characters(potential_email_text))
         
     to_return = buffer.strip()
     if to_return:
