@@ -38,6 +38,7 @@ async def collate_response_async(
     function_args_buffer = ""
     prev_ends_with_money = False
     prev_starts_with_whitespace = True
+    
     async for token in gen:
         if not token:
             continue
@@ -47,7 +48,7 @@ async def collate_response_async(
             if prev_ends_with_money and starts_with_whitespace:
                 yield buffer.strip()
                 buffer = ""
-            # If the previous token didn't have leading whitespace and the current does:
+            # If the previous token didn't have leading whitespace and the current does::
             elif not prev_starts_with_whitespace and starts_with_whitespace:
                 potential_email_text = buffer.split()[-1]
                 converted_email_text = convert_email_characters(potential_email_text)
